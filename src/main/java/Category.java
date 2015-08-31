@@ -38,7 +38,7 @@ public class Category {
 
   public void save() {
     try(Connection con = DB.sql2o.open()) {
-      String sql = "INSERT INTO Categories(name) VALUES (:name)";
+      String sql = "INSERT INTO categories(name) VALUES (:name)";
       this.id = (int) con.createQuery(sql, true)
         .addParameter("name", this.name)
         .executeUpdate()
@@ -48,7 +48,7 @@ public class Category {
 
   public static Category find(int id) {
     try(Connection con = DB.sql2o.open()) {
-      String sql = "SELECT * FROM Categories where id=:id";
+      String sql = "SELECT * FROM categories where id=:id";
       Category Category = con.createQuery(sql)
         .addParameter("id", id)
         .executeAndFetchFirst(Category.class);
@@ -58,10 +58,22 @@ public class Category {
 
   public List<Task> getTasks() {
   try(Connection con = DB.sql2o.open()) {
-    String sql = "SELECT * FROM Tasks where categoryId=:id";
+    String sql = "SELECT tasks.* FROM categories JOIN categories_tasks ON (categories_tasks.category_id = categories.id) JOIN tasks ON (categories_tasks.task_id = tasks.id) WHERE category_id=:id ORDER BY due_date ASC";
     return con.createQuery(sql)
       .addParameter("id", id)
       .executeAndFetch(Task.class);
+    }
+  }
+
+
+  public void addTask(Task task) {
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "INSERT INTO categories_tasks (category_id,task_id) VALUES (:category_id, :task_id)";
+      con.createQuery(sql)
+          .addParameter("category_id", this.getId())
+          .addParameter("task_id", task.getId())
+          .executeUpdate();
+
     }
   }
 

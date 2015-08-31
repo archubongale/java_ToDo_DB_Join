@@ -1,15 +1,20 @@
 import java.util.List;
 import org.sql2o.*;
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import java.text.DateFormat;
+
 
 public class Task {
   private String description;
   private int id;
-  private Date due_date;
-  private boolean is_completed;
+  private String due_date;
+  private boolean is_completed = false;
 
 
 
-  public Task(String description, Date due_date, boolean is_completed) {
+  public Task(String description, String due_date, boolean is_completed) {
     this.description = description;
     this.due_date = due_date;
     this.is_completed = is_completed;
@@ -25,7 +30,7 @@ public class Task {
     return id;
   }
 
-  public Date getDueDate() {
+  public String getDueDate() {
     return due_date;
   }
 
@@ -34,8 +39,9 @@ public class Task {
   }
 
 
+
   public static List<Task> all() {
-    String sql = "SELECT * FROM tasks";
+    String sql = "SELECT * FROM tasks ORDER BY due_date ASC";
     try(Connection con = DB.sql2o.open()) {
       return con.createQuery(sql).executeAndFetch(Task.class);
     }
@@ -47,8 +53,6 @@ public class Task {
       return false;
     } else {
       Task newTask = (Task) otherTask;
-      System.out.println(this.getCategoryId());
-      System.out.println(newTask.getCategoryId());
       return this.getDescription().equals(newTask.getDescription()) &&
              this.getId() == newTask.getId();
     }
@@ -56,7 +60,7 @@ public class Task {
 
   public void save() {
   try(Connection con = DB.sql2o.open()) {
-    String sql = "INSERT INTO Tasks (description, due_date, isCompleted ) VALUES (:description, :due_date, :is_completed)";
+    String sql = "INSERT INTO Tasks (description, due_date, is_completed ) VALUES (:description, :due_date, :is_completed)";
     this.id = (int) con.createQuery(sql, true)
       .addParameter("description", description)
       .addParameter("due_date",due_date)
@@ -86,16 +90,17 @@ public class Task {
     }
   }
 
-  // public void update(String description, boolean is_completed) {
-  //   try(Connection con = DB.sql2o.open()) {
-  //     String sql = "UPDATE tasks SET description = :description, is_completed = :is_completed) WHERE id = :id";
-  //     con.createQuery(sql)
-  //       .addParameter("description", description)
-  //       .addParameter("is_completed", is_completed)
-  //       .addParameter("id", id)
-  //       .executeUpdate();
-  //   }
-  // }
+  public void addCategory(Category category) {
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "INSERT INTO categories_tasks (category_id,task_id) VALUES (:category_id, :task_id)";
+      con.createQuery(sql)
+          .addParameter("category_id", category.getId())
+          .addParameter("task_id", this.getId())
+          .executeUpdate();
+
+    }
+  }
+
 
   public void delete() {
       try(Connection con = DB.sql2o.open()) {
@@ -103,12 +108,13 @@ public class Task {
         con.createQuery(sql)
           .addParameter("id", id)
           .executeUpdate();
-      }
+
 
       String joinDeleteQuery = "DELETE FROM categories_tasks WHERE task_id = :taskId";
       con.createQuery(joinDeleteQuery)
         .addParameter("taskId", this.getId())
         .executeUpdate();
+      }
     }
 
 }
